@@ -28,8 +28,11 @@ if [ $? -ne 0 ]; then
   exit -3
 fi
 
-read -p "Enter server URL: " serverurl
-read -p "Enter machine name: " machinename
+read -p 'Enter the server URL: ' serverurl
+echo "Server URL: $serverurl"
+
+read -p 'Enter the machine name: ' machinename
+echo "Machine Name: $machinename"
 
 echo "Cloning the repository..."
 git clone https://github.com/SkyTheCodeMaster/status-monitor.git /tmp/status-monitor
