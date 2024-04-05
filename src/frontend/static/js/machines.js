@@ -73,7 +73,7 @@ async function display_machines() {
 
   for (let [name, machine_info] of Object.entries(selected_machines)) {
     const cell = document.createElement("div");
-    cell.classList.add("cell", "box");
+    cell.classList.add("cell", "box", "has-background-grey");
     cell.style.width = "fit-content";
     cell.style.height = "fit-content";
 
@@ -97,20 +97,21 @@ async function display_machines() {
     const machine_title = document.createElement("h1");
     machine_title.innerText = name;
     machine_title.classList.add("title", "is-4");
+    machine_title.style.color = "white";
 
     const online_icon = document.createElement("iconify-icon");
     online_icon.setAttribute("icon", "ph:globe");
     online_icon.setAttribute("width", "2em");
     online_icon.setAttribute("height", "2em");
     console.log(machine_info);
-    online_icon.style.color = machine_info["data"]["online"] ? "green" : "red";
+    online_icon.style.color = machine_info["data"]["online"] ? "lime" : "red";
     online_icon.title = machine_info["data"]["online"] ? "This machine is online" : "This machine is offline";
 
     top_level_left_item.appendChild(machine_title);
     top_level_right_item.appendChild(online_icon);
 
     const hr = document.createElement("hr");
-    hr.classList.add("my-1", "has-background-grey");
+    hr.classList.add("my-1", "has-background-grey-lighter");
 
     // Display basic stats if stat monitor is enabled
     const stats_div = document.createElement("div");
@@ -128,6 +129,8 @@ async function display_machines() {
       cpu_icon.setAttribute("height", "1.5em");
       const cpu_text = document.createElement("p");
       cpu_text.innerText = cpu["1m"];
+      cpu_text.style.color = "white";
+      cpu_icon.style.color = "white";
       cpu_level_item.appendChild(cpu_icon);
       cpu_level_item.appendChild(cpu_text);
       stats_level.appendChild(cpu_level_item);
@@ -155,6 +158,9 @@ async function display_machines() {
       } else if (percent_ram_used >= 50) {
         ram_icon.style.color = "yellow";
         ram_text.style.color = "yellow";
+      } else {
+        ram_icon.style.color = "white";
+        ram_text.style.color = "white";
       }
 
       ram_level_item.appendChild(ram_icon);
@@ -184,6 +190,9 @@ async function display_machines() {
       } else if (percent_disk_used >= 50) {
         disk_icon.style.color = "yellow";
         disk_text.style.color = "yellow";
+      } else {
+        disk_icon.style.color = "white";
+        disk_text.style.color = "white";
       }
 
       disk_level_item.appendChild(disk_icon);
@@ -194,6 +203,7 @@ async function display_machines() {
     } else {
       const p = document.createElement("p");
       p.innerText = "Machine has invalid stats.";
+      p.style.color = "white";
       stats_div.appendChild(p);
     }
 

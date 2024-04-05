@@ -15,7 +15,7 @@ python3.11 -m pip --version > /dev/null
 if [ $? -ne 0 ]; then
   echo "python3.11 pip is not installed, attempting to install with ensurepip."
   python3.11 -m ensurepip
-  if ["$?" -ne 0]; then
+  if [ $? -ne 0]; then
     echo "pip was unable to be installed."
     exit -2
   fi
@@ -42,7 +42,7 @@ cwd=$(pwd)
 cd ./statuscd/
 
 echo "Ensuring execute permissions..."
-chmod +x install.sh run.sh update.sh revert.sh
+chmod +x install.sh run.sh update.sh
 
 echo "Creating python virtual environment under ./statuscd/venv/"
 python3.11 -m venv venv
