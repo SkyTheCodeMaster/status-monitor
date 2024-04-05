@@ -38,14 +38,13 @@ echo "Copying client files to ./statuscd/"
 mkdir ./statuscd/
 cp -r /tmp/status-monitor/tools/client-daemon/* ./statuscd/
 
+cwd=$(pwd)
+cd ./statuscd/
+
 echo "Ensuring execute permissions..."
 chmod +x install.sh run.sh update.sh revert.sh
 
-cwd=$(pwd)
-
 echo "Creating python virtual environment under ./statuscd/venv/"
-cd ./statuscd/
-
 python3.11 -m venv venv
 
 echo "Activating virtual environment"
@@ -75,7 +74,7 @@ echo "[Install]" >> statuscd.service >> statuscd.service
 echo "WantedBy=multi-user.target" >> statuscd.service
 
 echo "Attempting to link service file"
-sudo systemctl link $pwd/statuscd.service
+sudo systemctl link $(pwd)/statuscd.service
 echo "Attempting to enable service file"
 sudo systemctl enable statuscd
 echo "Starting service"
