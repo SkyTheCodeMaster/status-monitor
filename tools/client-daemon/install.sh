@@ -12,7 +12,7 @@ fi
 
 echo "Checking if pip is installed..."
 python3.11 -m pip --version > /dev/null
-if ["$?" -ne 0]; then
+if [ $? -ne 0]; then
   echo "python3.11 pip is not installed, attempting to install with ensurepip."
   python3.11 -m ensurepip
   if ["$?" -ne 0]; then
@@ -22,8 +22,8 @@ if ["$?" -ne 0]; then
 fi
 
 echo "Checking if venv is installed..."
-python3.11 -m venv -h >/dev/null
-if ["$?" -ne 0]; then
+python3.11 -m venv -h > /dev/null
+if [ $? -ne 0]; then
   echo "python3.11 venv is not installed, please install it!"
   exit -3
 fi
@@ -36,7 +36,7 @@ git clone https://github.com/SkyTheCodeMaster/status-monitor.git /tmp/status-mon
 
 echo "Copying client files to ./statuscd/"
 mkdir ./statuscd/
-cp -r /tmp/status-monitor/tools/client-daemon/ ./statuscd/
+cp -r /tmp/status-monitor/tools/client-daemon/* ./statuscd/
 
 echo "Ensuring execute permissions..."
 chmod +x install.sh run.sh update.sh revert.sh
