@@ -28,12 +28,6 @@ if [ $? -ne 0 ]; then
   exit -3
 fi
 
-read -p 'Enter the server URL: ' serverurl
-echo "Server URL: $serverurl"
-
-read -p 'Enter the machine name: ' machinename
-echo "Machine Name: $machinename"
-
 echo "Cloning the repository..."
 git clone https://github.com/SkyTheCodeMaster/status-monitor.git /tmp/status-monitor
 
@@ -57,8 +51,8 @@ echo "Installing pip dependencies..."
 python3.11 -m pip install -r requirements.txt
 
 echo "Creating config file"
-echo "MACHINE_NAME = \"$machinename\"" > config.py
-echo "SERVER_URL = \"$serverurl/api/ws/start/\"" >> config.py
+echo "MACHINE_NAME = \"MACHINE NAME\"" > config.py
+echo "SERVER_URL = \"http://SERVER URL/api/ws/start/\"" >> config.py
 
 echo "Creating service file"
 echo "[Unit]" > statuscd.service
