@@ -10,12 +10,18 @@ if TYPE_CHECKING:
   from aiohttp import ClientSession
 
   from asyncpg import Connection, Pool
+  from api.utils.websocket_handler import WebsocketHandler
+
+class StatusConfig:
+  UPDATE_FREQUENCY: int # Number of seconds for update frequency
 
 class Application(BaseApplication):
   pool: Pool
   LOG: Logger
   cs: ClientSession
   POSTGRES_ENABLED: bool
+  config: StatusConfig
+  websocket_handler: WebsocketHandler
 
 class Request(BaseRequest):
   app: Application

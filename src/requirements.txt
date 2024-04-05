@@ -1,3 +1,4 @@
 aiohttp==3.8.3
 aiohttp_remotes==1.2.0
+asyncpg==0.28.0
 coloredlogs==15.0.1

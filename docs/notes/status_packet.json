@@ -1,0 +1,30 @@
+{
+  "stats": {
+    "cpu": {
+      "1m": 1.00,
+      "5m": 3.00,
+      "15m": 0.50
+    },
+    "ram": {
+      "used": 384576000,
+      "free": 616424000,
+      "total": 1000000000
+    },
+    "disk": {
+      "used": 500000000,
+      "total": 600000000
+    },
+    "boot_time": 69696969,
+    "internet": {
+      "current": {
+        "outgoing": 0,
+        "incoming": 0
+      },
+      "5m": {
+        "outgoing": 0,
+        "incoming": 0
+      }
+    }
+  },
+  "extras": {}
+}

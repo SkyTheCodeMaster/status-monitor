@@ -1,0 +1,13 @@
+These aren't concrete docs, just notes for later use
+
+Connection flow:
+
+GET /ws/start/?name={name}&addons=a,b,c
+receive ws url, update frequency
+begin tracking and sending stats
+
+receive INFO packet:
+send current stats
+
+receive UPDATE packet:
+update requested values (update frequency)

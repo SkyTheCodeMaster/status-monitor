@@ -6,8 +6,8 @@ async function load_db_counts() {
   } catch (e) {
     console.error(e)
   }
-  const db_size = document.getElementById("db_size");
-  db_size.innerText = format(db_size.innerText, data["db_size"] ? data["db_size"] : "No DB");
+  const connected_machines = document.getElementById("connected_machines");
+  connected_machines.innerText = format(connected_machines.innerText, data["online_machines"], data["total_machines"]);
 }
 
 async function setup() {

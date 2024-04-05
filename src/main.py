@@ -5,13 +5,14 @@ import logging
 import math
 import os
 import tomllib
-import sys
 
+import pathlib
 import aiohttp
 import asyncpg
 import coloredlogs
 from aiohttp import web
 
+from utils.extra_request import StatusConfig
 from utils.get_routes import get_module
 from utils.logger import CustomWebLogger
 from utils.pg_pool_middleware import pg_pool_middleware
@@ -75,6 +76,13 @@ async def startup():
     app.cs = session
     api_app.cs = session
 
+    # Build the StatusConfig
+    sc = StatusConfig()
+    sc.UPDATE_FREQUENCY = config["srv"]["default_status_config"]["update_frequency"]
+
+    app.config = sc
+    api_app.config = sc
+
     app.LOG = LOG
     api_app.LOG = LOG
     disabled_cogs: list[str] = []
@@ -117,9 +125,14 @@ async def startup():
   except asyncio.exceptions.TimeoutError:
     LOG.error("PostgreSQL connection timeout. Check the connection arguments!")
   finally:
+    try: await api_app.websocket_handler.close()   # noqa: E701
+    except: pass #noqa: E722, E701
     try: await site.stop()   # noqa: E701
     except: pass  # noqa: E722, E701
     try: await session.close()   # noqa: E701
     except: pass  # noqa: E722, E701
 
-asyncio.run(startup())
+try:
+  asyncio.run(startup())
+except KeyboardInterrupt:
+  print("Server shut down.")

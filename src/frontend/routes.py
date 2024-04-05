@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 with open("config.toml") as f:
   config = tomllib.loads(f.read())
+  DEVMODE = config["devmode"]
 
 routes = web.RouteTableDef()
 
@@ -23,20 +24,26 @@ def join(a: str, b: str) -> str:
   "Join 2 filepaths"
   return str(pathlib.Path(a).joinpath(pathlib.Path(b)))
 
-for root, dirs, files in os.walk("frontend/templates"):
-  for file in files:
-    filepath = join(root,file)
-    with open(filepath,"r") as f:
-      templates[filepath.removeprefix("frontend/templates").removeprefix("/")] = f.read()
+def refresh_files():
+  for root, dirs, files in os.walk("frontend/templates"):
+    for file in files:
+      filepath = join(root,file)
+      with open(filepath,"r") as f:
+        templates[filepath.removeprefix("frontend/templates").removeprefix("/")] = f.read()
 
-for root, dirs, files in os.walk("frontend/supporting"):
-  for file in files:
-    filepath = join(root,file)
-    with open(filepath,"r") as f:
-      sup_templates[filepath.removeprefix("frontend/supporting").removeprefix("/")] = f.read()
+  for root, dirs, files in os.walk("frontend/supporting"):
+    for file in files:
+      filepath = join(root,file)
+      with open(filepath,"r") as f:
+        sup_templates[filepath.removeprefix("frontend/supporting").removeprefix("/")] = f.read()
+
+refresh_files()
 
 for name, contents in templates.items():
-  async def serve(request: web.Request, name=name, contents=contents) -> web.Response:
+  async def serve(request: web.Request, name=name) -> web.Response:
+    if DEVMODE:
+      refresh_files()
+    contents = templates[name]
     return web.Response(text=contents, content_type="text/html")
 
   clean_file_name = name.replace("/","_").removesuffix(".html")
@@ -48,7 +55,10 @@ for name, contents in templates.items():
   routes._items.append(web.RouteDef("GET",f"/{serve_name}", serve, {}))
 
 for name, contents in sup_templates.items():
-  async def serve(request: web.Request, name=name, contents=contents) -> web.Response:
+  async def serve(request: web.Request, name=name) -> web.Response:
+    if DEVMODE:
+      refresh_files()
+    contents = sup_templates[name]
     return web.Response(text=contents, content_type="text/html")
 
   clean_file_name = name.replace("/","_").removesuffix(".html")

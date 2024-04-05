@@ -16,6 +16,7 @@ with open("config.toml") as f:
 
 routes = web.RouteTableDef()
 
+
 @routes.get("/srv/get/")
 async def get_lp_get(request: Request) -> Response:
   packet = {
@@ -24,10 +25,23 @@ async def get_lp_get(request: Request) -> Response:
   }
 
   if request.app.POSTGRES_ENABLED:
-    database_size_record = await request.conn.fetchrow("SELECT pg_size_pretty ( pg_database_size ( current_database() ) );")
-    packet["db_size"] = database_size_record.get("pg_size_pretty","-1 kB")
+    database_size_record = await request.conn.fetchrow(
+      "SELECT pg_size_pretty ( pg_database_size ( current_database() ) );"
+    )
+    packet["db_size"] = database_size_record.get("pg_size_pretty", "-1 kB")
 
+  packet["total_machines"] = len(
+    request.app.websocket_handler.connected_machines
+  )
+  packet["online_machines"] = len(
+    [
+      cm
+      for cm in request.app.websocket_handler.connected_machines.values()
+      if cm.online
+    ]
+  )
   return web.json_response(packet)
+
 
 async def setup(app: web.Application) -> None:
   for route in routes:

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generic Template</title>
+    <link rel="stylesheet" href="/css/vendored/bulma.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.0.0/dist/iconify-icon.min.js"></script>
+    <script src="/js/common.js" async></script>
+    <script src="/js/machines.js" async></script>
+  </head>
+  <body>
+    <script id="replace_with_navbar" src="/js/nav.js"></script>
+    <div class="columns">
+      <div class="column is-narrow my-4 ml-4">
+        <div class="box">
+          <aside class="menu">
+            <p class="menu-label">Categories</p>
+            <ul class="menu-list" id="menu_list">
+
+            </ul>
+          </aside>
+        </div>
+      </div>
+      <div class="column my-4 mr-4">
+        <div class="box">
+          <h1 class="title" id="stats_title">{0} - {1}/{2} Machines Online</h1>
+        </div>
+        <div class="box">
+          <div class="grid" id="machine_grid">
+  
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="replace_with_footer"></div>
+  </body>
+</html>
