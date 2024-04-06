@@ -73,7 +73,7 @@ async function display_machines() {
 
   for (let [name, machine_info] of Object.entries(selected_machines)) {
     const cell = document.createElement("div");
-    cell.classList.add("cell", "box", "has-background-grey");
+    cell.classList.add("cell", "box", "has-background-grey", "is-col-span-2");
     cell.style.width = "fit-content";
     cell.style.height = "fit-content";
 

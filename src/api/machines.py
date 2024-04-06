@@ -25,7 +25,6 @@ routes = web.RouteTableDef()
 @routes.get("/machines/get/all/")
 async def get_machines_get_all(request: Request) -> Response:
   packet = await request.app.websocket_handler.get_all_data()
-  print(packet)
   return web.json_response(packet)
 
 
@@ -283,7 +282,7 @@ async def post_machines_reconnect(request: Request) -> Response:
     return Response(status=400, text="must pass machine name in query")
 
   name = urllib.parse.unquote_plus(name)
-  
+
   try:
     reconnect_after = int(request.query.get("after", "5"))
   except ValueError:

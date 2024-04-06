@@ -51,6 +51,8 @@ class WebsocketHandler:
     while True:
       for cm in self.connected_machines.values():
         cm.online = not cm.ws.closed
+        if cm.ws.closed:
+          print(cm.name, "is closed")
       await asyncio.sleep(1)
 
   async def add_machine(
