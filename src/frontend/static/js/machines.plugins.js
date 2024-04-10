@@ -293,8 +293,8 @@ async function xmrig_plugin(extras) {
 
   shares_extended_level.appendChild(shares_extended_level_item_average_time);
 
-  const shares_extended_level_item_total_shares = document.createElement("div");
-  shares_extended_level_item_total_shares.classList.add(
+  const shares_extended_level_item_total_hashes = document.createElement("div");
+  shares_extended_level_item_total_hashes.classList.add(
     "is-flex", // jesus take the wheel
     "is-flex-direction-column",
     "is-align-items-center",
@@ -302,15 +302,17 @@ async function xmrig_plugin(extras) {
     "level-item"
   )
 
-  const shares_extended_level_item_total_shares_title = document.createElement("p");
-  shares_extended_level_item_total_shares_title.innerHTML = "<b>Total Hashes</b>";
-  const shares_extended_level_item_total_shares_text = document.createElement("p");
-  shares_extended_level_item_total_shares_text.innerText = shares["total"];
+  const shares_extended_level_item_total_hashes_title = document.createElement("p");
+  shares_extended_level_item_total_hashes_title.innerHTML = "<b>Total Hashes</b>";
+  shares_extended_level_item_total_hashes_title.title = shares["hashes_total"];
+  const shares_extended_level_item_total_hashes_text = document.createElement("p");
+  shares_extended_level_item_total_hashes_text.innerText = format_human(shares["hashes_total"]);
+  shares_extended_level_item_total_hashes_text.title = shares["hashes_total"];
 
-  shares_extended_level_item_total_shares.appendChild(shares_extended_level_item_total_shares_title);
-  shares_extended_level_item_total_shares.appendChild(shares_extended_level_item_total_shares_text);
+  shares_extended_level_item_total_hashes.appendChild(shares_extended_level_item_total_hashes_title);
+  shares_extended_level_item_total_hashes.appendChild(shares_extended_level_item_total_hashes_text);
 
-  shares_extended_level.appendChild(shares_extended_level_item_total_shares);
+  shares_extended_level.appendChild(shares_extended_level_item_total_hashes);
 
   top_box.appendChild(hashrate_level);
   top_box.appendChild(details_level);
