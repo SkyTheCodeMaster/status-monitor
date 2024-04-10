@@ -202,8 +202,8 @@ async def main(cs: aiohttp.ClientSession):
             global reconnect_after
             reconnect_after = data["reconnect_after"]
             raise asyncio.CancelledError
-          elif message_type == "update":
-            logging.info("got update")
+          elif message_type == "updateclient":
+            logging.info("got updateclient")
             proc = await asyncio.create_subprocess_shell("pwd/update.sh")
             await proc.communicate()
             reconnect_after = "update"

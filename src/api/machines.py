@@ -327,6 +327,51 @@ async def post_machines_reconnect_all(request: Request) -> Response:
 
   return Response()
 
+
+@routes.post("/machines/updateclient/")
+async def post_machines_updateclient(request: Request) -> Response:
+  "pass `name` in query."
+  name = request.query.get("name", None)
+  if name is None:
+    return Response(status=400, text="must pass machine name in query")
+
+  name = urllib.parse.unquote_plus(name)
+
+  try:
+    reconnect_after = int(request.query.get("after", "5"))
+  except ValueError:
+    return Response(status=400, text="after must be integer!")
+
+  if (
+    name not in request.app.websocket_handler.connected_machines
+    or not request.app.websocket_handler.connected_machines[name].online
+  ):
+    return Response(status=409, text="machine not connected")
+
+  await request.app.websocket_handler.reconnect_machine(
+    name, reconnect_after=reconnect_after
+  )
+  return Response()
+
+
+@routes.post("/machines/updateclient/all/")
+async def post_machines_updateclient_all(request: Request) -> Response:
+  "pass `name` in query."
+  try:
+    reconnect_after = int(request.query.get("after", "5"))
+  except ValueError:
+    return Response(status=400, text="after must be integer!")
+
+  names = list(request.app.websocket_handler.connected_machines.keys())
+
+  for name in names:
+    try:
+      await request.app.websocket_handler.reconnect_machine(
+        name, reconnect_after=reconnect_after
+      )
+    except Exception:
+      request.LOG.exception(f"failed to reconnect {name}")
+
 @routes.get("/header/")
 async def get_header(request: Request) -> Response:
   print(request.headers)
