@@ -6,10 +6,10 @@ import math
 import os
 import tomllib
 
-import pathlib
 import aiohttp
 import asyncpg
 import coloredlogs
+import uvloop
 from aiohttp import web
 
 from utils.extra_request import StatusConfig
@@ -34,7 +34,7 @@ logging.basicConfig(
   handlers = handlers,
   format=LOGFMT,
   datefmt=LOGDATEFMT,
-  level=logging.INFO,
+  level=logging.DEBUG,
 )
 
 coloredlogs.install(
@@ -66,7 +66,8 @@ async def startup():
     if config["postgresql"]["enabled"]:
       pool = await asyncpg.create_pool(
         config["postgresql"]["url"],
-        password=config["postgresql"]["password"]
+        password=config["postgresql"]["password"],
+        max_size=250
       )
 
       app.pool = pool
@@ -133,6 +134,6 @@ async def startup():
     except: pass  # noqa: E722, E701
 
 try:
-  asyncio.run(startup())
+  uvloop.run(startup(), debug=True)
 except KeyboardInterrupt:
   print("Server shut down.")

@@ -30,9 +30,9 @@ async def get_lp_get(request: Request) -> Response:
     )
     packet["db_size"] = database_size_record.get("pg_size_pretty", "-1 kB")
 
-  packet["total_machines"] = len(
-    request.app.websocket_handler.connected_machines
-  )
+  total_machines_record = await request.conn.fetchrow("SELECT COUNT(*) FROM Machines;")
+
+  packet["total_machines"] = total_machines_record.get("count")
   packet["online_machines"] = len(
     [
       cm

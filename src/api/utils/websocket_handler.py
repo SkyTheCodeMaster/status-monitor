@@ -5,14 +5,10 @@ import json
 import time
 from typing import TYPE_CHECKING
 
-from aiohttp.web import WSMsgType
-
-from api.utils.plugins import ALL_PLUGINS
-
 from .data_classes import BasicMachineStats, ConnectedMachine, MonitorPacket
 
 if TYPE_CHECKING:
-  from typing import Callable
+  from logging import Logger
 
   from aiohttp import WSMessage
   from aiohttp.web import WebSocketResponse
@@ -32,49 +28,60 @@ class WebsocketHandler:
   app: Application
   # Task to check which websockets are alive.
   living_socket_task: asyncio.Task
+  # Handle packet tasks that are running
+  handle_packet_tasks: list[asyncio.Task]
+  # Logging instance
+  log: Logger
 
   def __init__(self, app: Application) -> None:
     self.connected_machines = {}
     self.current_stats = {}
+    self.handle_packet_tasks = []
     self.app = app
+    self.log = app.LOG
 
   async def setup(self) -> None:
     self.living_socket_task = asyncio.create_task(self._check_living_sockets())
 
   async def close(self) -> None:
-    for cm in self.connected_machines.values():
-      await self.remove_machine(cm.name)
-
+    names = [cm.name for cm in self.connected_machines.values()]
+    for name in names:
+      try:
+        await self.remove_machine(name)
+      except Exception:
+        self.app.LOG.error(f"Failed to disconnect {name}")
     self.living_socket_task.cancel()
 
   async def _check_living_sockets(self) -> None:
     while True:
       for cm in self.connected_machines.values():
-        cm.online = not cm.ws.closed
-        if cm.ws.closed:
-          print(cm.name, "is closed")
+        # It is offline if the WS is closed, or it hasn't talked in 10 minutes.
+        is_online = (
+          not cm.ws.closed and cm.last_communication > time.time() - 600
+        )
+        cm.online = is_online
       await asyncio.sleep(1)
 
   async def add_machine(
-    self, machine_name: str, ws: WebSocketResponse, plugins: list[str]
+    self, machine_name: str, ws: WebSocketResponse, plugins: list[Plugin]
   ) -> None:
-    # Resolve plugins
-    resolved_plugins: dict[str, Plugin] = {}
-    for plugin_name in plugins:
-      resolved_plugins[plugin_name] = ALL_PLUGINS[plugin_name]
-
-    cm = ConnectedMachine(ws=ws, plugins=resolved_plugins, name=machine_name)
+    self.log.debug(f"[WSH][{machine_name}] called add_machine")
+    cm = ConnectedMachine(ws=ws, plugins=plugins, name=machine_name)
     cm.online = True
+    self.log.debug(f"[WSH][{machine_name}] instantiated connectedmachine")
 
     async with self.app.pool.acquire() as conn:
       conn: Connection
+      self.log.debug(f"[WSH][{machine_name}] got connection")
       record = await conn.fetchrow(
         "SELECT * FROM Machines WHERE Name ILIKE $1;", machine_name
       )
+      self.log.debug(f"[WSH][{machine_name}] filling data")
       cm.fill_data(record)
+      self.log.debug(f"[WSH][{machine_name}] finished filling")
 
     self.connected_machines[machine_name] = cm
-    await self.handle_packet(cm.name)
+    self.log.debug(f"[WSH][{machine_name}] inserted into cm dict")
 
   async def remove_machine(self, machine_name: str) -> None:
     if machine_name in self.connected_machines:
@@ -101,9 +108,11 @@ class WebsocketHandler:
       self.connected_machines.pop(machine_name)
 
   async def _handle_packet(self, machine_name: str, message: WSMessage) -> None:
-    self.app.LOG.info(f"raw packet from {machine_name} of size {len(message.data)}")
+    self.app.LOG.info(
+      f"raw packet from {machine_name} of size {len(message.data)}"
+    )
     if machine_name not in self.connected_machines:
-      print("Received packet from disconnected machine:", machine_name)
+      # print("Received packet from disconnected machine:", machine_name)
       return
     cm = self.connected_machines[machine_name]
     try:
@@ -125,27 +134,10 @@ class WebsocketHandler:
     packet_data = data.get("data")
     if packet_type == "monitor":
       mp = MonitorPacket(packet_data)
-      await mp.process_extras(cm.plugins.values(), cm)
+      await mp.process_extras(cm.plugins, cm)
       cm.last_communication = time.time()
       cm.stats = BasicMachineStats(mp)
-    self.app.LOG.info(f"Received packet from {cm.name}")
-
-  async def handle_packet(
-    self, machine_name: str
-  ) -> Callable[[None, None], asyncio.Task]:
-    cm = self.connected_machines[machine_name]
-
-    async for message in cm.ws:
-      if message.type in (WSMsgType.CLOSING, WSMsgType.CLOSED):
-        break
-      elif message.type != WSMsgType.TEXT:
-        self.app.LOG.error(
-          f"Received invalid message type {WSMsgType(message.type).name}; {hasattr(message,'data') and message.data or 'no data'}"
-        )
-      try:
-        await self._handle_packet(machine_name, message)
-      except Exception:
-        self.app.LOG.exception(f"Failed handling packet for {cm.name}")
+    # self.app.LOG.info(f"Received packet from {cm.name}")
 
   def get_stats(self, name: str) -> BasicMachineStats:
     if name not in self.connected_machines:
@@ -163,20 +155,27 @@ class WebsocketHandler:
     if name not in self.connected_machines:
       return None
     cm = self.connected_machines[name]
-    if cm.stats is None:
-      return None
     packet = {
       "name": cm.name,
       "category": cm.category,
-      "data": await cm.stats.latest_packet.out(cm.plugins.values(), cm),
     }
+    if not hasattr(cm, "stats"):
+      packet["data"] = "invalid stats"
+    else:
+      packet["data"] = await cm.stats.latest_packet.out(cm.plugins, cm)
     return packet
 
   async def get_all_data(self) -> dict[str, dict]:
     out = {}
     for machine_name in self.connected_machines.keys():
-      out[machine_name] = await self.get_data(machine_name)
-    
+      try:
+        async with asyncio.timeout(0.05):
+          out[machine_name] = await self.get_data(machine_name)
+      except asyncio.TimeoutError:
+        self.app.LOG.warning(
+          f"{machine_name} took longer than 50ms to get_data!"
+        )
+
     async with self.app.pool.acquire() as conn:
       conn: Connection
       all_machines = await conn.fetch("SELECT * FROM Machines;")
@@ -185,9 +184,6 @@ class WebsocketHandler:
           out[record.get("name")] = {
             "name": record.get("name"),
             "category": record.get("category"),
-            "data": {
-              "online": False,
-              "stats": "invalid stats"
-            }
+            "data": {"online": False, "stats": "invalid stats"},
           }
     return out

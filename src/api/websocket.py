@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import tomllib
 import urllib.parse
 from typing import TYPE_CHECKING
+import time
 
 from aiohttp import web
-from aiohttp.web import Response, WebSocketResponse
+from aiohttp.web import Response, WebSocketResponse, WSMsgType
 from yarl import URL
 
-from .utils.plugins import ALL_PLUGINS
+from .utils.plugins import ALL_PLUGINS, fetch_plugins
 from .utils.websocket_handler import WebsocketHandler
 
 if TYPE_CHECKING:
@@ -82,6 +84,8 @@ async def get_ws_connect(request: Request) -> Response:
   machine_name = query.get("name", None)
   addons = query.get("addons", None)
 
+  request.LOG.debug(f"[WS][{machine_name}] received connect call")
+
   if addons is not None:
     try:
       addons_list: list[str] = addons.split(",")
@@ -90,20 +94,51 @@ async def get_ws_connect(request: Request) -> Response:
   else:
     addons_list = []
 
+  plugins_list = await fetch_plugins(addons_list, request.app.pool)
+  request.LOG.debug(f"[WS][{machine_name}] {plugins_list}")
+
   if machine_name is None:
     return Response(status=400, text="missing name in query")
 
   parsed_name = urllib.parse.unquote_plus(machine_name)
 
   exists = (await request.conn.fetchrow("SELECT EXISTS (SELECT Name) FROM Machines WHERE Name = $1;", parsed_name))["exists"]
-  
+
   if not exists:
     return Response(status=400, text="machine not registered")
+
+  request.LOG.debug(f"[WS][{machine_name}] machine exists, websocket it")
 
   ws = WebSocketResponse(autoclose=False)
   await ws.prepare(request)
 
-  await request.app.websocket_handler.add_machine(parsed_name, ws, addons_list)
+  request.LOG.debug(f"[WS][{machine_name}] prepared websocket")
+
+  ws_handler = request.app.websocket_handler
+
+  await ws_handler.add_machine(parsed_name, ws, plugins_list)
+
+  request.LOG.debug(f"[WS][{machine_name}] added machine")
+
+  async for message in ws:
+    request.LOG.debug(f"raw packet from {machine_name}: {WSMsgType(message.type).name}")
+    if message.type in (WSMsgType.CLOSING, WSMsgType.CLOSED):
+      break
+    elif message.type != WSMsgType.TEXT:
+      request.LOG.error(
+        f"Received invalid message type {WSMsgType(message.type).name}; {hasattr(message,'data') and message.data or 'no data'}"
+      )
+    try:
+      #ws_handler.handle_packet_tasks.append(
+      #  asyncio.create_task(request.app.websocket_handler._handle_packet(parsed_name, message))
+      #)
+      start = time.time()
+      await ws_handler._handle_packet(parsed_name, message)
+      total = time.time() - start
+      request.LOG.info(f"Handling packet for {parsed_name} took {total}s.")
+    except Exception:
+      request.LOG.exception(f"Failed handling packet for {parsed_name}")
+
   return ws
 
 async def setup(app: web.Application) -> None:

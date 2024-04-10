@@ -15,6 +15,7 @@ class Plugin:
   pool: asyncpg.Pool
   name: str  # Name used for referencing plugins
   side: str  # Whether or not to run this on client.
+  priority: int # When to run the plugin.
   # Possible values: 'client', 'server', 'both'
   # If client, the run and out should do nothing, as it is just a namespace plugin.
 
@@ -30,19 +31,20 @@ class Plugin:
   async def out(self, extras_dict: dict, machine: ConnectedMachine) -> Any:
     return extras_dict["test"]
 
-  def __init_subclass__(cls, *, name: str = None, side: str = "both", **kwargs) -> None:
+  def __init_subclass__(cls, *, name: str = None, side: str = "both", priority: int = 0, **kwargs) -> None:
     super().__init_subclass__(**kwargs)
     if name is None:
       name = cls.__qualname__
 
     cls.name = name
     cls.side = side
+    cls.priority = priority
 
 
 class ConnectedMachine:
   name: str
   ws: WebSocketResponse
-  plugins: dict[str, Plugin]
+  plugins: list[Plugin]
   reader_task: Task
   stats: BasicMachineStats
   running: bool
@@ -52,7 +54,7 @@ class ConnectedMachine:
   online: bool
 
   def __init__(
-    self, *, ws: WebSocketResponse, plugins: dict[str, Plugin], name: str
+    self, *, ws: WebSocketResponse, plugins: list[Plugin], name: str
   ) -> None:
     self.ws = ws
     self.plugins = plugins
@@ -136,8 +138,10 @@ class MonitorPacket:
     else:
       out["stats"] = "invalid stats"
 
+    out["extras"] = {}
+
     for plugin in plugins:
-      out[plugin.name] = await plugin.out(self.extras, connected_machine)
+      out["extras"][plugin.name] = await plugin.out(self.extras, connected_machine)
 
     return out
 

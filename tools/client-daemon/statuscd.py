@@ -121,12 +121,14 @@ async def main(cs: aiohttp.ClientSession):
     update_frequency = data.get("update_frequency")
     collect_stats = data.get("collect_stats")
     addons = yarl.URL(TARGET_URL).query.get("addons")
+    logging.info(f"requested plugins: {addons}")
     if addons is not None:
       plugins = fetch_plugins(addons)
     else:
       plugins = []
     logging.info(f"update frequency set to {update_frequency}s")
     logging.info(f"collect stats set to {collect_stats}")
+    logging.info(f"loaded plugins: {[plugin.name for plugin in plugins]}")
   try:
     async with cs.ws_connect(TARGET_URL) as ws:
 
@@ -145,7 +147,7 @@ async def main(cs: aiohttp.ClientSession):
 
         for plugin in plugins:
           logging.debug(f"Running plugin {plugin.name}")
-          monitor_packet["extras"][plugin.name] = await plugin.get_data()
+          monitor_packet["extras"][plugin.name] = await plugin.get_data(cs)
 
         logging.debug("Finished running plugins")
 

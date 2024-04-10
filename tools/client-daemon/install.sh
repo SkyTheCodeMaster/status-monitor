@@ -15,7 +15,7 @@ python3.11 -m pip --version > /dev/null
 if [ $? -ne 0 ]; then
   echo "python3.11 pip is not installed, attempting to install with ensurepip."
   python3.11 -m ensurepip
-  if [ $? -ne 0]; then
+  if [ $? -ne 0 ]; then
     echo "pip was unable to be installed."
     exit -2
   fi

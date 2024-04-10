@@ -7,10 +7,125 @@
     <link rel="stylesheet" href="/css/vendored/bulma.min.css">
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.0.0/dist/iconify-icon.min.js"></script>
     <script src="/js/common.js" async></script>
+    <script src="/js/machines.plugins.js" async></script>
     <script src="/js/machines.js" async></script>
   </head>
   <body>
     <script id="replace_with_navbar" src="/js/nav.js"></script>
+    <div class="modal" id="modal_machine">
+      <div class="modal-background" onclick="close_machine_modal()"></div>
+      <div class="modal-card">
+        <header class="modal-card-head py-4">
+          <button class="is-rounded button mr-2" aria-label="refresh" onclick="refresh_machine_modal()">
+            <span class="icon is-small">
+              <iconify-icon icon="material-symbols:refresh"></iconify-icon>
+            </span>
+          </button>
+          <p class="modal-card-title" id="modal_machine_name">MACHINE NAME</p>
+          <button class="delete" aria-label="close" onclick="close_machine_modal()"></button>
+        </header>
+        <section class="modal-card-body" id="modal_machine_body">
+          <button class="button is-fullwidth" id="modal_machine_detailed_stats_button">Detailed Stats</button>
+          <div class="box" id="modal_machine_detailed_stats_box" style="display:none;">
+            <div class="level">
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>CPU</b></p>
+                <iconify-icon icon="ph:cpu"></iconify-icon>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>1m</b></p>
+                <p id="modal_machine_detailed_stats_cpu_1m">0</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>15m</b></p>
+                <p id="modal_machine_detailed_stats_cpu_5m">0</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>15m</b></p>
+                <p id="modal_machine_detailed_stats_cpu_15m">0</p>
+              </div>
+            </div>
+            <div class="level">
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Memory</b></p>
+                <iconify-icon icon="ph:memory"></iconify-icon>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Percent</b></p>
+                <p id="modal_machine_detailed_stats_ram_percent">0%</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Free</b></p>
+                <p id="modal_machine_detailed_stats_ram_free">0GiB</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Used</b></p>
+                <p id="modal_machine_detailed_stats_ram_used">0GiB</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Total</b></p>
+                <p id="modal_machine_detailed_stats_ram_total">0GiB</p>
+              </div>
+            </div>
+            <div class="level">
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Disk</b></p>
+                <iconify-icon icon="carbon:vmdk-disk"></iconify-icon>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Percent</b></p>
+                <p id="modal_machine_detailed_stats_disk_percent">0%</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Free</b></p>
+                <p id="modal_machine_detailed_stats_disk_free">0GiB</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Used</b></p>
+                <p id="modal_machine_detailed_stats_disk_used">0GiB</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Total</b></p>
+                <p id="modal_machine_detailed_stats_disk_total">0GiB</p>
+              </div>
+            </div>
+            <div class="level">
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Network</b></p>
+                <iconify-icon icon="ph:globe"></iconify-icon>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Up</b></p>
+                <p id="modal_machine_detailed_stats_network_current_up">0B/s</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>Down</b></p>
+                <p id="modal_machine_detailed_stats_network_current_down">0B/s</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>5m Up</b></p>
+                <p id="modal_machine_detailed_stats_network_5m_up">0B/s</p>
+              </div>
+              <div class="is-flex is-flex-direction-column is-align-items-center is-justify-content-center level-item">
+                <p><b>5m Down</b></p>
+                <p id="modal_machine_detailed_stats_network_5m_down">0B/s</p>
+              </div>
+            </div>
+            <div class="level">
+              <div class="level-item is-flex-direction-row is-align-items-center is-justify-content-center level-item">
+                <p class="mr-2"><b>Boot Time</b></p>
+                <p id="modal_machine_detailed_stats_boot_time"></p>
+              </div>
+            </div>
+          </div>
+          <div id="modal_machine_plugin_div">
+
+          </div>
+        </section>
+        <footer class="modal-card-foot pt-0" style="padding-bottom: var(--bulma-modal-card-head-radius)"></footer>
+      </div>
+      <button class="modal-close is-large" aria-label="close" onclick="close_machine_modal()"></button>
+    </div>
     <div class="columns">
       <div class="column is-narrow my-4 ml-4">
         <div class="box">
@@ -24,7 +139,16 @@
       </div>
       <div class="column my-4 mr-4">
         <div class="box">
-          <h1 class="title" id="stats_title">{0} - {1}/{2} Machines Online</h1>
+          <div class="level">
+            <div class="level-left">
+              <div class="level-item">
+                <button class="button is-large is-primary" title="Refresh the machines" onclick="refresh_machines(this)" id="refresh_machines_button"><iconify-icon icon="material-symbols:refresh"></iconify-icon></button>
+              </div>
+              <div class="level-item">
+                <h1 class="title" id="stats_title" text="{0} - {1}/{2} Machines Online">JAVASCRIPT DIDNT LOAD. REFRESH PAGE.</h1>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="box">
           <div class="grid" id="machine_grid">

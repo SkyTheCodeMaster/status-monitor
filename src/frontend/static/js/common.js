@@ -69,3 +69,78 @@ function format_bytes(bytes, decimals = 2) {
 
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
+
+function format_bytes_per_second(bytes, decimals = 2) {
+  if (!+bytes) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['B/s', 'Kbps', 'Mbps', 'Gbps', 'Tbps', 'Pbps', 'Ebps', 'Zbps', 'Ybps']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+function format_hashes_per_second(bytes, decimals = 2) {
+  if (!+bytes) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s', 'ZH/s', 'YH/s']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+function to_title_case(str) {
+  return str.replace(
+    /\w\S*/g,
+    function(txt) {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    }
+  );
+}
+
+function _longdiv(numerator, denominator) {
+  let remainder = numerator % denominator;
+  let quotient = ((numerator-remainder)/denominator);
+
+  return [quotient, remainder];
+}
+
+function parse_seconds(_seconds, decimal_length = 0) {
+  // Turn seconds into year month day hour minute second, like
+  // 1y 3m 2d 16h 13m 45s
+  
+  let [_minutes, seconds]  = _longdiv(_seconds, 60);
+  let [_hours, minutes] = _longdiv(_minutes, 60);
+  let [_days, hours] = _longdiv(_hours, 60);
+  let [_months, days] = _longdiv(_days, 24);
+  let [_years, months] = _longdiv(_months, 30);
+  let years = Math.floor(_years/12);
+
+  let out = ""
+
+  if (years != 0) {
+    out = out + format("{0}y ", years.toFixed(decimal_length))
+  }
+  if (months != 0) {
+    out = out + format("{0}m ", months.toFixed(decimal_length))
+  }
+  if (days != 0) {
+    out = out + format("{0}d ", days.toFixed(decimal_length))
+  }
+  if (hours != 0) {
+    out = out + format("{0}h ", hours.toFixed(decimal_length))
+  }
+  if (minutes != 0) {
+    out = out + format("{0}m ", minutes.toFixed(decimal_length))
+  }
+  if (seconds != 0) {
+    out = out + format("{0}s ", seconds.toFixed(decimal_length))
+  }
+
+  return out
+}

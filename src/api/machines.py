@@ -4,6 +4,7 @@ import json
 import tomllib
 import urllib.parse
 from typing import TYPE_CHECKING
+import asyncio
 
 from aiohttp import web
 from aiohttp.web import Response
@@ -24,9 +25,12 @@ routes = web.RouteTableDef()
 
 @routes.get("/machines/get/all/")
 async def get_machines_get_all(request: Request) -> Response:
-  packet = await request.app.websocket_handler.get_all_data()
-  return web.json_response(packet)
-
+  try:
+    async with asyncio.timeout(3):
+      packet = await request.app.websocket_handler.get_all_data()
+      return web.json_response(packet)
+  except asyncio.TimeoutError:
+    return Response(status=500,text="top level timeout reached")
 
 @routes.get("/machines/get/")
 async def get_machines_get(request: Request) -> Response:
@@ -117,7 +121,7 @@ async def get_machines_info(request: Request) -> Response:
   name = urllib.parse.unquote_plus(name)
 
   record = await request.conn.fetchrow(
-    "SELECT * FROM Machines WHERE Name ILIKE $2;",
+    "SELECT * FROM Machines WHERE Name ILIKE $1;",
     name,
   )
 
@@ -193,11 +197,11 @@ async def post_machines_update(request: Request) -> Response:
     UPDATE
       Machines
     SET
-      Name = $3,
-      Category = $4,
-      CollectStats = $5,
-      Addons = $6,
-      ExtraConfig = $7
+      Name = $2,
+      Category = $3,
+      CollectStats = $4,
+      Addons = $5,
+      ExtraConfig = $6
     WHERE
       Name ILIKE $1;
     """,
@@ -234,7 +238,7 @@ async def delete_machines_delete(request: Request) -> Response:
     return Response(status=404, text="machine not found")
 
   result = await request.conn.execute(
-    "DELETE FROM Machines WHERE Name ILIKE $2;",
+    "DELETE FROM Machines WHERE Name ILIKE $1;",
     name,
   )
 
@@ -269,7 +273,10 @@ async def post_machines_disconnect_all(request: Request) -> Response:
   names = list(request.app.websocket_handler.connected_machines.keys())
 
   for name in names:
-    await request.app.websocket_handler.remove_machine(name)
+    try:
+      await request.app.websocket_handler.remove_machine(name)
+    except Exception:
+      request.LOG.error(f"failed to reconnect {name}")
 
   return Response()
 
@@ -311,10 +318,18 @@ async def post_machines_reconnect_all(request: Request) -> Response:
   names = list(request.app.websocket_handler.connected_machines.keys())
 
   for name in names:
-    await request.app.websocket_handler.reconnect_machine(
-      name, reconnect_after=reconnect_after
-    )
+    try:
+      await request.app.websocket_handler.reconnect_machine(
+        name, reconnect_after=reconnect_after
+      )
+    except Exception:
+      request.LOG.exception(f"failed to reconnect {name}")
 
+  return Response()
+
+@routes.get("/header/")
+async def get_header(request: Request) -> Response:
+  print(request.headers)
   return Response()
 
 
