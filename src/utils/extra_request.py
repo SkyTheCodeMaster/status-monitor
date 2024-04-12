@@ -20,7 +20,8 @@ class Application(BaseApplication):
   LOG: Logger
   cs: ClientSession
   POSTGRES_ENABLED: bool
-  config: StatusConfig
+  status_config: StatusConfig
+  config: dict # config.toml
   websocket_handler: WebsocketHandler
 
 class Request(BaseRequest):

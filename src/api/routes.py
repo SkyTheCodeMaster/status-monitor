@@ -9,19 +9,14 @@ from aiohttp.web import Response
 if TYPE_CHECKING:
   from utils.extra_request import Request
 
-with open("config.toml") as f:
-  config = tomllib.loads(f.read())
-  frontend_version = config["pages"]["frontend_version"]
-  api_version = config["srv"]["api_version"]
-
 routes = web.RouteTableDef()
 
 
 @routes.get("/srv/get/")
 async def get_lp_get(request: Request) -> Response:
   packet = {
-    "frontend_version": frontend_version,
-    "api_version": api_version,
+    "frontend_version": request.app.config.pages.frontend_version,
+    "api_version": request.app.config.pages.api_version,
   }
 
   if request.app.POSTGRES_ENABLED:

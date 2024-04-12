@@ -46,7 +46,7 @@ async def fetch_plugins(names: list[str], pool: Pool) -> list[Plugin]:
   for k,v in ALL_PLUGINS.items():
     if k in names:
       out.append(v(pool))
-  out.sort(key=lambda p: p.priority)
+  out.sort(key=lambda p: p.priority, reverse=True)
   return out
 
 print("[PLUGINS] Loaded server plugins:", ALL_PLUGINS.keys())

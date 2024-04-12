@@ -16,6 +16,7 @@ from utils.extra_request import StatusConfig
 from utils.get_routes import get_module
 from utils.logger import CustomWebLogger
 from utils.pg_pool_middleware import pg_pool_middleware
+from utils.table import Table
 
 LOGFMT = "[%(filename)s][%(asctime)s][%(levelname)s] %(message)s"
 LOGDATEFMT = "%Y/%m/%d-%H:%M:%S"
@@ -60,6 +61,9 @@ api_app = web.Application(
 
 async def startup():
   try:
+    app.config = Table(config)
+    api_app.config = Table(config)
+
     app.POSTGRES_ENABLED = config["postgresql"]["enabled"]
     api_app.POSTGRES_ENABLED = config["postgresql"]["enabled"]
 
@@ -81,8 +85,8 @@ async def startup():
     sc = StatusConfig()
     sc.UPDATE_FREQUENCY = config["srv"]["default_status_config"]["update_frequency"]
 
-    app.config = sc
-    api_app.config = sc
+    app.status_config = sc
+    api_app.status_config = sc
 
     app.LOG = LOG
     api_app.LOG = LOG

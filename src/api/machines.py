@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import tomllib
 import urllib.parse
 from typing import TYPE_CHECKING
 import asyncio
@@ -15,11 +14,6 @@ if TYPE_CHECKING:
   from utils.extra_request import Request
   from asyncpg import Record
 
-with open("config.toml") as f:
-  config = tomllib.loads(f.read())
-  frontend_version = config["pages"]["frontend_version"]
-  api_version = config["srv"]["api_version"]
-
 routes = web.RouteTableDef()
 
 
@@ -30,7 +24,8 @@ async def get_machines_get_all(request: Request) -> Response:
       packet = await request.app.websocket_handler.get_all_data()
       return web.json_response(packet)
   except asyncio.TimeoutError:
-    return Response(status=500,text="top level timeout reached")
+    return Response(status=500, text="top level timeout reached")
+
 
 @routes.get("/machines/get/")
 async def get_machines_get(request: Request) -> Response:
@@ -117,7 +112,7 @@ async def get_machines_info(request: Request) -> Response:
   name = request.query.get("name", None)
   if name is None:
     return Response(status=400, text="must pass machine in query")
-  
+
   name = urllib.parse.unquote_plus(name)
 
   record = await request.conn.fetchrow(
@@ -210,7 +205,7 @@ async def post_machines_update(request: Request) -> Response:
     new_category,
     new_stats_enabled,
     new_plugins,
-    new_extra_config,
+    json.dumps(new_extra_config),
   )
 
   if result == "UPDATE 1":
@@ -337,45 +332,25 @@ async def post_machines_updateclient(request: Request) -> Response:
 
   name = urllib.parse.unquote_plus(name)
 
-  try:
-    reconnect_after = int(request.query.get("after", "5"))
-  except ValueError:
-    return Response(status=400, text="after must be integer!")
-
   if (
     name not in request.app.websocket_handler.connected_machines
     or not request.app.websocket_handler.connected_machines[name].online
   ):
     return Response(status=409, text="machine not connected")
 
-  await request.app.websocket_handler.reconnect_machine(
-    name, reconnect_after=reconnect_after
-  )
+  await request.app.websocket_handler.update_client(name)
   return Response()
 
 
 @routes.post("/machines/updateclient/all/")
 async def post_machines_updateclient_all(request: Request) -> Response:
-  "pass `name` in query."
-  try:
-    reconnect_after = int(request.query.get("after", "5"))
-  except ValueError:
-    return Response(status=400, text="after must be integer!")
-
   names = list(request.app.websocket_handler.connected_machines.keys())
 
   for name in names:
     try:
-      await request.app.websocket_handler.reconnect_machine(
-        name, reconnect_after=reconnect_after
-      )
+      await request.app.websocket_handler.update_client(name)
     except Exception:
-      request.LOG.exception(f"failed to reconnect {name}")
-
-@routes.get("/header/")
-async def get_header(request: Request) -> Response:
-  print(request.headers)
-  return Response()
+      request.LOG.exception(f"failed to update {name}")
 
 
 async def setup(app: web.Application) -> None:

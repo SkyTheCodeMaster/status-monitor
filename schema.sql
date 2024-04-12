@@ -10,3 +10,9 @@ CREATE TABLE IF NOT EXISTS Machines (
   ExtraConfig JSON,
   CollectStats BOOLEAN
 );
+
+CREATE TABLE IF NOT EXISTS LoggedData (
+  Name TEXT, -- Machine name
+  Time TIMESTAMP WITH TIME ZONE,
+  Data JSON
+);

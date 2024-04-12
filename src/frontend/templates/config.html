@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generic Template</title>
+    <link rel="stylesheet" href="/css/vendored/bulma.min.css">
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="/js/vendored/monaco-0.47.0/vs/editor/editor.main.css">
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.0.0/dist/iconify-icon.min.js"></script>
+    <script src="/js/vendored/monaco-0.47.0/vs/loader.js"></script>
+    <script src="/js/common.js" async></script>
+    <script src="/js/config.js" async></script>
+  </head>
+  <body>
+    <script id="replace_with_navbar" src="/js/nav.js"></script>
+    <div class="columns">
+      <div class="column is-narrow my-4 ml-4">
+        <div class="box">
+          <h1 class="title is-3">Machines</h1>
+          <aside class="menu">
+            <ul class="menu-list" id="menu_list">
+
+            </ul>
+          </aside>
+        </div>
+      </div>
+      <div class="column my-4 mr-4">
+        <div class="box"> <!-- Buttons -->
+          <div class="level">
+            <div class="level-left">
+              <h1 class="title" id="machine_name_title" text="{0} ({1})">JAVASCRIPT DIDN'T LOAD. REFRESH PAGE.</h1>
+            </div>
+            <div class="level-right">
+              <div class="buttons are-large">
+                <button class="button is-danger" onclick="pull_config()"><iconify-icon icon="material-symbols:refresh"></iconify-icon></button>
+                <button class="button is-ghost" disabled></button>
+                <button class="button is-success" onclick="save_config()"><iconify-icon icon="ph:floppy-disk"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="box"> <!-- Monaco Editor -->
+          <div id="monaco_editor" style="width:100%;min-height:600px;border:1px solid grey;"></div>
+        </div>
+      </div>
+    </div>
+    <div id="replace_with_footer"></div>
+  </body>
+</html>

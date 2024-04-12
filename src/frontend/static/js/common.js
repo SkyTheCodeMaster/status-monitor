@@ -51,6 +51,7 @@ function create_popup(reason, is_danger) {
   // Add it to the HTML page.
   const body = document.body;
   body.appendChild(div);
+  return div.id;
 }
 
 function remove_popup(popup,reason) {
@@ -64,7 +65,7 @@ function format_human(human, decimals = 2) {
 
   const k = 1000;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'];
+  const sizes = ['', 'k', 'M', 'B', 'T', 'Qd', 'Qt', 'Sx', 'Sp', 'Oc', 'No', 'De', 'Ud', 'Du'];
 
   const i = Math.floor(Math.log(human) / Math.log(k));
 

@@ -15,6 +15,7 @@ async function setup_category(data, search_params) {
       category_names.push(entry["category"])
     }
   }
+  category_names = category_names.sort().reverse()
   const menu_list = document.getElementById("menu_list");
 
   let selected_category = search_params.get("c")

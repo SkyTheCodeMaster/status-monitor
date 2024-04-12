@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-import tomllib
 import urllib.parse
 from typing import TYPE_CHECKING
 import time
@@ -15,11 +13,6 @@ from .utils.websocket_handler import WebsocketHandler
 
 if TYPE_CHECKING:
   from utils.extra_request import Request
-
-with open("config.toml") as f:
-  config = tomllib.loads(f.read())
-  frontend_version = config["pages"]["frontend_version"]
-  api_version = config["srv"]["api_version"]
 
 routes = web.RouteTableDef()
 
@@ -70,7 +63,7 @@ async def get_ws_start(request: Request) -> Response:
 
   packet = {
     "url": str(url),
-    "update_frequency": request.app.config.UPDATE_FREQUENCY,
+    "update_frequency": request.app.status_config.UPDATE_FREQUENCY,
     "collect_stats": addons_record.get("collectstats"),
     "missed_plugins": ",".join(bad_list) # If the server is missing some plugins, let the client know.
   }

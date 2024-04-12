@@ -66,7 +66,7 @@ class WebsocketHandler:
     self, machine_name: str, ws: WebSocketResponse, plugins: list[Plugin]
   ) -> None:
     self.log.debug(f"[WSH][{machine_name}] called add_machine")
-    cm = ConnectedMachine(ws=ws, plugins=plugins, name=machine_name)
+    cm = ConnectedMachine(ws=ws, plugins=plugins, name=machine_name, app=self.app)
     cm.online = True
     self.log.debug(f"[WSH][{machine_name}] instantiated connectedmachine")
 
@@ -187,3 +187,23 @@ class WebsocketHandler:
             "data": {"online": False, "stats": "invalid stats"},
           }
     return out
+
+  async def update_client(self, machine_name: str) -> bool:
+    if machine_name in self.connected_machines:
+      cm = self.connected_machines[machine_name]
+      await cm.ws.send_json(
+        {
+          "type": "updateclient",
+          "error": 0,
+        }
+      )
+      await cm.ws.close()
+      self.connected_machines.pop(machine_name)
+      return True
+    return False
+
+  async def update_all_clients(self) -> bool:
+    names = [cm.name for cm in self.connected_machines.values()]
+    for name in names:
+      await self.update_client(name)
+    return True
