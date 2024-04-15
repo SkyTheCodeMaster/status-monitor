@@ -6,7 +6,9 @@
     <title>Generic Template</title>
     <link rel="stylesheet" href="/css/vendored/bulma.min.css">
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="/js/vendored/monaco-0.47.0/vs/editor/editor.main.css">
+    <link rel="stylesheet" href="/css/vendored/bulma-tagsinput.min.css">
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.0.0/dist/iconify-icon.min.js"></script>
+    <script src="/js/vendored/bulma-tagsinput.min.js"></script>
     <script src="/js/vendored/monaco-0.47.0/vs/loader.js"></script>
     <script src="/js/common.js" async></script>
     <script src="/js/config.js" async></script>
@@ -41,6 +43,54 @@
         </div>
         <div class="box"> <!-- Monaco Editor -->
           <div id="monaco_editor" style="width:100%;min-height:600px;border:1px solid grey;"></div>
+          <div class="box mt-2">
+            <!-- Edit other stats -->
+
+            <div class="field">
+              <label class="label">Category</label>
+              <div class="control">
+                <input class="input" type="text" id="input_category" style="width:20%;">
+              </div>
+            </div>
+            
+            <div class="field">
+              <div class="control">
+                <label class="checkbox">
+                  Monitor Stats
+                  <input type="checkbox" id="input_stats_enabled">
+                </label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">Plugins</label>
+              <div class="control" style="width:20%;">
+                <input id="plugins_tags" class="input" type="text">
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">Scripts</label>
+              <div class="control" style="width:20%;">
+                <input id="scripts_tags" class="input" type="text">
+              </div>
+            </div>
+
+            <div class="level">
+              <div class="level-left">
+                <div class="buttons are-large">
+                  <button class="button is-danger is-dark" title="Reconnect machine in 15 seconds." onclick="reconnect_machine()"><iconify-icon icon="material-symbols:refresh"></iconify-icon></button>
+                </div>
+              </div>
+              <div class="level-right">
+                <div class="buttons are-large">
+                  <button class="button is-danger" onclick="pull_config()"><iconify-icon icon="material-symbols:refresh"></iconify-icon></button>
+                  <button class="button is-ghost" disabled></button>
+                  <button class="button is-success" onclick="save_config()"><iconify-icon icon="ph:floppy-disk"></iconify-icon></button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

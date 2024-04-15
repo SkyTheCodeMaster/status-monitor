@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import logging
 import time
@@ -14,14 +15,12 @@ from utils.utils import validate_parameters
 if TYPE_CHECKING:
   from typing import Any
 
-  from asyncpg import Connection
-
   from api.utils.data_classes import ConnectedMachine, MonitorPacket
 
 LOG = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
-  "alert_targets": ["notify"],
+  "alert_targets": ["ntfy"],
   "alert_interval": 86400,
   "cpu_threshold": -1,
   "mem_threshold": 90,
@@ -82,11 +81,12 @@ class UsageScript(Script, name="usage"):
   def __init__(self, app: Application) -> None:
     super().__init__(app)
     self.evaluator = py_expression_eval.Parser()
+    self.sent_alerts = {}
 
   async def run(self, packet: MonitorPacket, machine: ConnectedMachine) -> None:
     if "usagealert" not in machine.extra_config:
       # Set in the defaults
-      machine.extra_config["usagealert"] = DEFAULT_CONFIG.copy()
+      machine.extra_config["usagealert"] = copy.deepcopy(DEFAULT_CONFIG)
       if not await machine.write_extra_config(self.pool):
         LOG.warning(f"Failed to write default config for {machine.name}!")
 
@@ -98,14 +98,16 @@ class UsageScript(Script, name="usage"):
       if packet.cpu["1m"] > alert_config["cpu_threshold"]:
         message += f"CPU @ {packet.cpu['1m']} (Over limit of {alert_config['cpu_threshold']})\n"
 
-    if "ram_threshold" in alert_config and alert_config["ram_threshold"] > 0:
+    if "mem_threshold" in alert_config and alert_config["mem_threshold"] > 0:
       ram_percent = (packet.ram["used"] / packet.ram["total"]) * 100
-      if ram_percent > alert_config["ram_threshold"]:
-        message += f"RAM @ {round(ram_percent,1)}% (Over limit of {alert_config['ram_threshold']}%)\n"
+      print(f"[SCRIPTS] [USAGE] [{machine.name}] {ram_percent} > {alert_config['mem_threshold']}")
+      if ram_percent > alert_config["mem_threshold"]:
+        message += f"RAM @ {round(ram_percent,1)}% (Over limit of {alert_config['mem_threshold']}%)\n"
 
+    self.app.LOG.info(f"{alert_config}")
     if "disk_threshold" in alert_config and alert_config["disk_threshold"] > 0:
       disk_percent = (packet.disk["used"] / packet.disk["total"]) * 100
-      if ram_percent > alert_config["ram_threshold"]:
+      if disk_percent > alert_config["disk_threshold"]:
         message += f"Disk @ {round(disk_percent,1)}% (Over limit of {alert_config['disk_threshold']}%)\n"
 
     if "raw_alert" in alert_config:
@@ -178,7 +180,8 @@ class UsageScript(Script, name="usage"):
         and mhash == message_hash
       ):
         return
-      # If we're not on cooldown OR the message hash is different, send.
-      if "notify" in alert_config["alert_targets"]:
-        await self.send_ntfy_notification(message, title=f"{machine.name} alert", priority=4, click=machine.url(["basicstats"]))
-      self.sent_alerts[machine.name] = (time.time(), message_hash)
+    # If we're not on cooldown OR the message hash is different, send.
+    if "ntfy" in alert_config["alert_targets"]:
+      self.app.LOG.warning(f"Sending alert for {machine.name} over ntfy!")
+      await self.send_ntfy_notification(message, title=f"{machine.name} alert", priority=4, click=machine.url(["basicstats"]))
+    self.sent_alerts[machine.name] = (time.time(), message_hash)

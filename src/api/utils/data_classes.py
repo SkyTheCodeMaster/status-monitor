@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING
 
 import yarl
 
 if TYPE_CHECKING:
   from asyncio import Task
+  from logging import Logger
   from typing import Any
 
   import aiohttp
@@ -15,6 +17,7 @@ if TYPE_CHECKING:
 
   from utils.extra_request import Application
 
+LOG = logging.getLogger(__name__)
 
 class Plugin:
   pool: asyncpg.Pool
@@ -128,6 +131,9 @@ class Script:
     async with self.app.cs.post(
       self.app.config.notify.url, headers=headers, data=json.dumps(data)
     ) as resp:
+      if resp.status != 200:
+        self.app.LOG.warning(f"{self.app.config.notify.topic} {headers}")
+        self.app.LOG.warning(f"Failed to send ntfy! HTTP{resp.status}: {await resp.text()}")
       return resp.status == 200
 
 
@@ -135,6 +141,7 @@ class ConnectedMachine:
   name: str
   ws: WebSocketResponse
   plugins: list[Plugin]
+  scripts: list[Script]
   reader_task: Task
   stats: BasicMachineStats
   running: bool
@@ -143,20 +150,24 @@ class ConnectedMachine:
   extra_config: dict
   online: bool
   app: Application
+  _warnings: set
 
   def __init__(
     self,
     *,
     ws: WebSocketResponse,
     plugins: list[Plugin],
+    scripts: list[Script],
     name: str,
     app: Application,
   ) -> None:
     self.ws = ws
     self.plugins = plugins
+    self.scripts = scripts
     self.name = name
     self.app = app
     self.running = True
+    self._warnings = set()
 
   def fill_data(self, record: asyncpg.Record) -> None:
     self.category = record.get("category", None)
@@ -183,6 +194,14 @@ class ConnectedMachine:
       )
       return result == "UPDATE 1"
 
+  def add_warning(self, source: str) -> None:
+    self._warnings.add(source)
+
+  def remove_warning(self, source: str) -> None:
+    try:
+      self._warnings.remove(source)
+    except KeyError:
+      pass
 
 class InternetStats:
   current: dict[str, float]
@@ -209,8 +228,9 @@ class MonitorPacket:
   extras: dict
   raw: dict
   _cached_out: Any
+  _log: Logger
 
-  def __init__(self, packet: dict) -> None:
+  def __init__(self, packet: dict, *, log: Logger = None) -> None:
     self.raw = packet
     monitoring_data = packet.get("stats", None)
     self.stats_valid = True
@@ -228,12 +248,26 @@ class MonitorPacket:
 
     self.extras = packet.get("extras")
 
+    self._log = log
+
   async def process_extras(
     self, plugins: list[Plugin], connected_machine: ConnectedMachine
   ) -> None:
     for plugin in plugins:
       # This is expected to modify `extras` in place.
       await plugin.run(self.extras, connected_machine)
+
+  async def run_scripts(
+    self, scripts: list[Script], connected_machine: ConnectedMachine
+  ) -> None:
+    for script in scripts:
+      try:
+        if self._log:
+          self._log.info(f"[SCRIPTS] Running {script.name} for {connected_machine.name}.")
+        await script.run(self, connected_machine)
+      except Exception:
+        if self.log:
+          self._log.exception(f"Failed running {script.name}!")
 
   async def out(
     self, plugins: list[Plugin], connected_machine: ConnectedMachine

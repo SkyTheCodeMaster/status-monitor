@@ -46,7 +46,7 @@ async def fetch_scripts(names: list[str], app: Application) -> list[Script]:
 
   for k,v in ALL_SCRIPTS.items():
     if k in names:
-      out.append(v(app.pool, app.cs))
+      out.append(v(app))
   out.sort(key=lambda p: p.priority, reverse=True)
   return out
 

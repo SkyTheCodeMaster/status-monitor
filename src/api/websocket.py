@@ -9,6 +9,7 @@ from aiohttp.web import Response, WebSocketResponse, WSMsgType
 from yarl import URL
 
 from .utils.plugins import ALL_PLUGINS, fetch_plugins
+from .utils.scripts import fetch_scripts
 from .utils.websocket_handler import WebsocketHandler
 
 if TYPE_CHECKING:
@@ -100,6 +101,9 @@ async def get_ws_connect(request: Request) -> Response:
   if not exists:
     return Response(status=400, text="machine not registered")
 
+  scripts = await request.conn.fetchrow("SELECT Scripts FROM Machines WHERE Name ILIKE $1;", parsed_name)
+  scripts_list = await fetch_scripts(scripts["scripts"], request.app)
+
   request.LOG.debug(f"[WS][{machine_name}] machine exists, websocket it")
 
   ws = WebSocketResponse(autoclose=False)
@@ -109,7 +113,7 @@ async def get_ws_connect(request: Request) -> Response:
 
   ws_handler = request.app.websocket_handler
 
-  await ws_handler.add_machine(parsed_name, ws, plugins_list)
+  await ws_handler.add_machine(parsed_name, ws, plugins_list, scripts_list)
 
   request.LOG.debug(f"[WS][{machine_name}] added machine")
 

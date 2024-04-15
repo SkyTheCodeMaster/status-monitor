@@ -8,6 +8,9 @@ import asyncio
 from aiohttp import web
 from aiohttp.web import Response
 
+
+from .utils.plugins import ALL_PLUGINS
+from .utils.scripts import ALL_SCRIPTS
 from utils.utils import validate_parameters
 
 if TYPE_CHECKING:
@@ -57,7 +60,8 @@ async def post_machines_create(request: Request) -> Response:
     "name": "Machine Name Here" - Return error if name and category already registered.
     "category": "Machine's category" - ^^^
     "stats_enabled": true
-    "plugins": "a,b,c"
+    "plugins": ["a","b","c"],
+    "scripts": ["a","b","c"]
     "extra_config": {"extra_plugin_config_here":"AAA"}
   }
   """
@@ -75,6 +79,7 @@ async def post_machines_create(request: Request) -> Response:
   category: str = data.get("category")
   stats_enabled: bool = data.get("stats_enabled", True)
   plugins: str = data.get("plugins", [])
+  scripts: str = data.get("scripts", [])
   extra_config: dict = data.get("extra_config", {})
 
   # Check if the name and category already exist.
@@ -89,11 +94,12 @@ async def post_machines_create(request: Request) -> Response:
   extra_str = json.dumps(extra_config)
 
   result = await request.conn.execute(
-    "INSERT INTO Machines (Name, Category, CollectStats, Addons, ExtraConfig) VALUES ($1,$2,$3,$4,$5);",
+    "INSERT INTO Machines (Name, Category, CollectStats, Addons, Scripts, ExtraConfig) VALUES ($1,$2,$3,$4,$5,$6);",
     name,
     category,
     stats_enabled,
     plugins,
+    scripts,
     extra_str,
   )
 
@@ -128,6 +134,7 @@ async def get_machines_info(request: Request) -> Response:
     "category": record.get("category"),
     "stats_enabled": record.get("collectstats"),
     "plugins": record.get("addons"),
+    "scripts": record.get("scripts"),
   }
 
   try:
@@ -147,7 +154,7 @@ async def post_machines_update(request: Request) -> Response:
       "name": "Machine Name Here" - Return error if name and category already registered.
       "category": "Machine's category" - ^^^
       "stats_enabled": true
-      "plugins": "a,b,c"
+      "plugins": ["a","b","c"]
       "extra_config": {"extra_plugin_config_here":"AAA"}
     }
   }
@@ -181,6 +188,7 @@ async def post_machines_update(request: Request) -> Response:
     "stats_enabled", machine_exists.get("collectstats")
   )
   new_plugins: str = new.get("plugins", machine_exists.get("addons"))
+  new_scripts: str = new.get("scripts", machine_exists.get("scripts"))
   new_extra_config: dict = new.get(
     "extra_config", machine_exists.get("extraconfig")
   )
@@ -196,7 +204,8 @@ async def post_machines_update(request: Request) -> Response:
       Category = $3,
       CollectStats = $4,
       Addons = $5,
-      ExtraConfig = $6
+      Scripts = $6,
+      ExtraConfig = $7
     WHERE
       Name ILIKE $1;
     """,
@@ -205,6 +214,7 @@ async def post_machines_update(request: Request) -> Response:
     new_category,
     new_stats_enabled,
     new_plugins,
+    new_scripts,
     json.dumps(new_extra_config),
   )
 
@@ -351,6 +361,18 @@ async def post_machines_updateclient_all(request: Request) -> Response:
       await request.app.websocket_handler.update_client(name)
     except Exception:
       request.LOG.exception(f"failed to update {name}")
+
+
+@routes.get("/machines/get/scripts/")
+async def get_machines_get_scripts(request: Request) -> Response:
+  "This also gets plugins, but i don't know what to properly name it."
+  script_names = list(ALL_SCRIPTS.keys())
+  plugin_names = list(ALL_PLUGINS.keys())
+  
+  return web.json_response({
+    "plugins": plugin_names,
+    "scripts": script_names
+  })
 
 
 async def setup(app: web.Application) -> None:

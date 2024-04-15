@@ -45,7 +45,7 @@ class XmrigPlugin(Plugin):
         data = await resp.json()
     except Exception:
       LOG.exception("Failed to gather data from xmrig API!")
-      return None
+      return "failed"
     out = {}
 
     out["hashrate"] = {

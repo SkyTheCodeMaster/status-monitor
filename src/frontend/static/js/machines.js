@@ -272,7 +272,14 @@ async function display_machines() {
 
   for (let [name, machine_info] of Object.entries(selected_machines)) {
     const cell = document.createElement("div");
-    cell.classList.add("cell", "box", "has-background-grey", "is-col-span-2");
+    cell.classList.add("cell", "box", "is-col-span-2");
+
+    if (machine_info.warning.length > 0) {
+      cell.classList.add("has-background-danger");
+    } else {
+      cell.classList.add("has-background-grey");
+    }
+
     cell.style.width = "fit-content";
     cell.style.height = "fit-content";
 
@@ -430,6 +437,16 @@ async function display_machines() {
     cell.appendChild(top_level);
     cell.append(hr);
     cell.append(stats_div);
+
+    const warning_tags = document.getElementById("warning_tags");
+    remove_children(warning_tags);
+
+    for (let warn of machine_info.warning) {
+      let tag = document.createElement("span");
+      tag.classList.add("tag", "is-danger");
+      tag.innerText = warn;
+      warning_tags.appendChild(tag);
+    }
     
     machine_grid.appendChild(cell);
   }

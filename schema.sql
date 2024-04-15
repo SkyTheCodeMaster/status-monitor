@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS Machines (
   Name TEXT,
   Category TEXT,
   Addons TEXT ARRAY,
+  Scripts TEXT ARRAY,
   ExtraConfig JSON,
   CollectStats BOOLEAN
 );

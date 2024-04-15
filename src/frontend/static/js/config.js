@@ -1,3 +1,5 @@
+//const { BulmaTagsInput } = require("/js/vendored/bulma-tagsinput.min.js");
+
 require.config({ paths: { 'vs': '/js/vendored/monaco-0.47.0/vs' }});
 let current_editor;
 let g_monaco;
@@ -65,6 +67,7 @@ async function setup_menu(data) {
         url.searchParams.set("m", a.innerText);
         window.history.replaceState(null, null, url);
         await edit_machine();
+        await setup_menu(data);
       }
   
       ul.appendChild(a);
@@ -95,6 +98,11 @@ async function edit_machine() {
 
   require(["vs/editor/editor.main"], function() {
     g_monaco = monaco;
+
+    if (current_editor != null) {
+      current_editor.dispose();
+    }
+
     current_editor = monaco.editor.create(editor_box, {
       "language": "json",
       "value" : pretty_json
@@ -103,7 +111,40 @@ async function edit_machine() {
     current_editor.getModel().updateOptions({ "tabSize": 2});
   });
 
-  
+  const input_category = document.getElementById("input_category");
+  const input_stats_enabled = document.getElementById("input_stats_enabled");
+  const plugins_tags = document.getElementById("plugins_tags");
+  const scripts_tags = document.getElementById("scripts_tags");
+
+  let scripts_data;
+  try {
+    let request = await fetch("/api/machines/get/scripts/");
+    scripts_data = await request.json();
+  } catch (e) {
+    console.error(e);
+  }
+
+  input_category.value = data["category"];
+  input_stats_enabled.checked = data["stats_enabled"];
+
+  if (plugins_tags.BulmaTagsInput != null) {
+    plugins_tags.BulmaTagsInput().removeAll();
+  }
+
+  if (scripts_tags.BulmaTagsInput != null) {
+    scripts_tags.BulmaTagsInput().removeAll();
+  }
+
+  BulmaTagsInput.attach(plugins_tags, {
+    "source": scripts_data["plugins"]
+  });
+
+  BulmaTagsInput.attach(scripts_tags, {
+    "source": scripts_data["scripts"]
+  })
+
+  plugins_tags.BulmaTagsInput().add(data["plugins"]);
+  scripts_tags.BulmaTagsInput().add(data["scripts"]);
 }
 
 async function save_config() {
@@ -121,10 +162,18 @@ async function save_config() {
   const url = new URL(window.location.href)
   let selected_machine = url.searchParams.get("m");
 
-  console.log(selected_machine);
+  const input_category = document.getElementById("input_category");
+  const input_stats_enabled = document.getElementById("input_stats_enabled");
+  const plugins_tags = document.getElementById("plugins_tags");
+  const scripts_tags = document.getElementById("scripts_tags");
+
   let packet = {
     "name": selected_machine,
     "new": {
+      "category": input_category.value,
+      "stats_enabled": input_stats_enabled.checked,
+      "plugins": plugins_tags.BulmaTagsInput().items,
+      "scripts": scripts_tags.BulmaTagsInput().items,
       "extra_config": json_data
     }
   }
@@ -151,8 +200,32 @@ async function save_config() {
   }
 }
 
-async function pull_config() {
+async function reconnect_machine() {
   const url = new URL(window.location.href)
+  let selected_machine = url.searchParams.get("m");
+
+  try {
+    let request = await fetch("/api/machines/reconnect/?name="+encodeURIComponent(selected_machine).replace("%20","+")+"&after=15", {
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+    });
+
+    if (request.status == 200) {
+      let popup_id = create_popup("Reconnected machine!");
+      setTimeout(function() {remove_popup(popup_id)}, 5000);
+    } else {
+      let popup_id = create_popup("HTTP" + request.status + ":\n" + await request.text(), true);
+      setTimeout(function() {remove_popup(popup_id)}, 10000);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function pull_config() {
+  /*const url = new URL(window.location.href)
   let selected_machine = url.searchParams.get("m");
 
   let data;
@@ -164,7 +237,9 @@ async function pull_config() {
   }
 
   let pretty_json = JSON.stringify(data["extra_config"], null, 2);
-  current_editor.getModel().setValue(pretty_json);
+  current_editor.getModel().setValue(pretty_json);*/
+
+  await edit_machine();
 }
 
 async function setup() {

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
   from utils.extra_request import Application
 
-  from .data_classes import Plugin
+  from .data_classes import Plugin, Script
 
 
 class WebsocketHandler:
@@ -63,10 +63,16 @@ class WebsocketHandler:
       await asyncio.sleep(1)
 
   async def add_machine(
-    self, machine_name: str, ws: WebSocketResponse, plugins: list[Plugin]
+    self,
+    machine_name: str,
+    ws: WebSocketResponse,
+    plugins: list[Plugin],
+    scripts: list[Script],
   ) -> None:
     self.log.debug(f"[WSH][{machine_name}] called add_machine")
-    cm = ConnectedMachine(ws=ws, plugins=plugins, name=machine_name, app=self.app)
+    cm = ConnectedMachine(
+      ws=ws, plugins=plugins, name=machine_name, app=self.app, scripts=scripts
+    )
     cm.online = True
     self.log.debug(f"[WSH][{machine_name}] instantiated connectedmachine")
 
@@ -118,7 +124,7 @@ class WebsocketHandler:
     try:
       raw_data = message.data
       if raw_data is None or not isinstance(raw_data, str):
-        self.app.LOG.info(
+        self.app.LOG.warning(
           f"raw packet from {machine_name} is not correct type; it is {type(raw_data)}"
         )
         return
@@ -133,8 +139,9 @@ class WebsocketHandler:
     packet_type = data.get("type")
     packet_data = data.get("data")
     if packet_type == "monitor":
-      mp = MonitorPacket(packet_data)
+      mp = MonitorPacket(packet_data, log=self.log)
       await mp.process_extras(cm.plugins, cm)
+      await mp.run_scripts(cm.scripts, cm)
       cm.last_communication = time.time()
       cm.stats = BasicMachineStats(mp)
     # self.app.LOG.info(f"Received packet from {cm.name}")
@@ -158,6 +165,7 @@ class WebsocketHandler:
     packet = {
       "name": cm.name,
       "category": cm.category,
+      "warning": list(cm._warnings),
     }
     if not hasattr(cm, "stats"):
       packet["data"] = "invalid stats"
@@ -184,6 +192,7 @@ class WebsocketHandler:
           out[record.get("name")] = {
             "name": record.get("name"),
             "category": record.get("category"),
+            "warning": [],
             "data": {"online": False, "stats": "invalid stats"},
           }
     return out

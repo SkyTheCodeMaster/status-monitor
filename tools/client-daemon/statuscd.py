@@ -147,8 +147,10 @@ async def main(cs: aiohttp.ClientSession):
 
         for plugin in plugins:
           logging.debug(f"Running plugin {plugin.name}")
-          monitor_packet["extras"][plugin.name] = await plugin.get_data(cs)
-
+          try:
+            monitor_packet["extras"][plugin.name] = await plugin.get_data(cs)
+          except Exception:
+            logging.exception(f"Failed to run {plugin.name}")
         logging.debug("Finished running plugins")
 
         packet = {"type": "monitor", "data": monitor_packet, "error": 0}

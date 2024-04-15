@@ -88,8 +88,8 @@ async def startup():
     app.status_config = sc
     api_app.status_config = sc
 
-    app.LOG = LOG
-    api_app.LOG = LOG
+    app.LOG = logging
+    api_app.LOG = logging
     disabled_cogs: list[str] = []
 
     for cog in [
