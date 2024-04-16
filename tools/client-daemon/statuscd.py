@@ -206,7 +206,7 @@ async def main(cs: aiohttp.ClientSession):
             raise asyncio.CancelledError
           elif message_type == "updateclient":
             logging.info("got updateclient")
-            proc = await asyncio.create_subprocess_shell("pwd/update.sh")
+            proc = await asyncio.create_subprocess_shell("./update.sh")
             await proc.communicate()
             reconnect_after = "update"
             raise asyncio.CancelledError
