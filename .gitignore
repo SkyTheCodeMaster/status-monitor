@@ -1,5 +1,5 @@
 tools/client-daemon/config.py
-src/config.py
+src/config.toml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

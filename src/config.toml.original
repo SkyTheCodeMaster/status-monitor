@@ -1,0 +1,31 @@
+devmode = true
+timezone = "America/Toronto"
+
+[postgresql]
+  enabled = true
+  url = "postgres://pg_url/"
+  password = "passwd"
+
+[log]
+  file = ""
+
+[srv]
+  url = "http://status.com/"
+  host = "0.0.0.0"
+  port = 8080
+  # IPs exempt from ratelimiting.
+  ratelimit_exempt = [
+    "192.168.0.0/16",
+  ]
+  api_version = "1.0.0"
+
+[srv.default_status_config]
+  update_frequency = 300
+
+[pages]
+  frontend_version = "1.0.0"
+
+[notify]
+  topic = "channel name"
+  token = "Bearer token"
+  url = "https://ntfy.sh/"
