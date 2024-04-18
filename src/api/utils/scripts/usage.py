@@ -91,23 +91,25 @@ class UsageScript(Script, name="usage"):
         LOG.warning(f"Failed to write default config for {machine.name}!")
 
     alert_config = machine.extra_config["usagealert"]
+    alert = False
 
     message = f"Alert for {machine.name}:\n"
 
     if "cpu_threshold" in alert_config and alert_config["cpu_threshold"] > 0:
       if packet.cpu["1m"] > alert_config["cpu_threshold"]:
+        alert = True
         message += f"CPU @ {packet.cpu['1m']} (Over limit of {alert_config['cpu_threshold']})\n"
 
     if "mem_threshold" in alert_config and alert_config["mem_threshold"] > 0:
       ram_percent = (packet.ram["used"] / packet.ram["total"]) * 100
-      print(f"[SCRIPTS] [USAGE] [{machine.name}] {ram_percent} > {alert_config['mem_threshold']}")
       if ram_percent > alert_config["mem_threshold"]:
+        alert = True
         message += f"RAM @ {round(ram_percent,1)}% (Over limit of {alert_config['mem_threshold']}%)\n"
 
-    self.app.LOG.info(f"{alert_config}")
     if "disk_threshold" in alert_config and alert_config["disk_threshold"] > 0:
       disk_percent = (packet.disk["used"] / packet.disk["total"]) * 100
       if disk_percent > alert_config["disk_threshold"]:
+        alert = True
         message += f"Disk @ {round(disk_percent,1)}% (Over limit of {alert_config['disk_threshold']}%)\n"
 
     if "raw_alert" in alert_config:
@@ -137,6 +139,7 @@ class UsageScript(Script, name="usage"):
           alert_message: str = data["message"]
           if not alert_message.endswith("\n"):
             alert_message += "\n"
+          alert = True
           message += alert_message
 
     if "processed_alert" in alert_config:
@@ -167,21 +170,27 @@ class UsageScript(Script, name="usage"):
           alert_message: str = data["message"]
           if not alert_message.endswith("\n"):
             alert_message += "\n"
+          alert = True
           message += alert_message
+
+    if not alert:
+      return
 
     message_hash = hash(message)
 
+    self.app.LOG.warning(f"{self.sent_alerts}")
     if machine.name in self.sent_alerts:
       sent, mhash = self.sent_alerts[machine.name]
 
       # If we're still on cooldown and the message hash is identical, do not send
-      if (
-        sent + alert_config["alert_interval"] > time.time()
-        and mhash == message_hash
-      ):
-        return
-    # If we're not on cooldown OR the message hash is different, send.
-    if "ntfy" in alert_config["alert_targets"]:
-      self.app.LOG.warning(f"Sending alert for {machine.name} over ntfy!")
-      await self.send_ntfy_notification(message, title=f"{machine.name} alert", priority=4, click=machine.url(["basicstats"]))
-    self.sent_alerts[machine.name] = (time.time(), message_hash)
+      if not (sent > time.time() and mhash == message_hash):
+        # If we're not on cooldown OR the message hash is different, send.
+        if "ntfy" in alert_config["alert_targets"]:
+          self.app.LOG.warning(f"Sending alert for {machine.name} over ntfy!")
+          await self.send_ntfy_notification(message, title=f"{machine.name} alert", priority=4, click=machine.url(["basicstats"]))
+        self.sent_alerts[machine.name] = (time.time()+alert_config["alert_interval"], message_hash)
+    else:
+      if "ntfy" in alert_config["alert_targets"]:
+        self.app.LOG.warning(f"Sending alert for {machine.name} over ntfy!")
+        await self.send_ntfy_notification(message, title=f"{machine.name} alert", priority=4, click=machine.url(["basicstats"]))
+      self.sent_alerts[machine.name] = (time.time()+alert_config["alert_interval"], message_hash)

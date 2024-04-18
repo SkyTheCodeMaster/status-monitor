@@ -362,6 +362,8 @@ async def post_machines_updateclient_all(request: Request) -> Response:
     except Exception:
       request.LOG.exception(f"failed to update {name}")
 
+  return Response()
+
 
 @routes.get("/machines/get/scripts/")
 async def get_machines_get_scripts(request: Request) -> Response:
@@ -373,6 +375,37 @@ async def get_machines_get_scripts(request: Request) -> Response:
     "plugins": plugin_names,
     "scripts": script_names
   })
+
+@routes.post("/machines/clearwarnings/")
+async def post_machines_clearwarnings(request: Request) -> Response:
+  "pass `name` in query."
+  name = request.query.get("name", None)
+  if name is None:
+    return Response(status=400, text="must pass machine name in query")
+
+  name = urllib.parse.unquote_plus(name)
+
+  if (
+    name not in request.app.websocket_handler.connected_machines
+    or not request.app.websocket_handler.connected_machines[name].online
+  ):
+    return Response(status=409, text="machine not connected")
+
+  request.app.websocket_handler.connected_machines[name]._warnings.clear()
+  return Response()
+
+
+@routes.post("/machines/clearwarnings/all/")
+async def post_machines_clearwarnings_all(request: Request) -> Response:
+  names = list(request.app.websocket_handler.connected_machines.keys())
+
+  for name in names:
+    try:
+      request.app.websocket_handler.connected_machines[name]._warnings.clear()
+    except Exception:
+      request.LOG.exception(f"failed to clear warnings for {name}")
+
+  return Response()
 
 
 async def setup(app: web.Application) -> None:

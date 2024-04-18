@@ -5,10 +5,14 @@ async function run_plugins(extras) {
   // return Name: HTMLElement
   let out = {};
   for (let plugin of ALL_PLUGINS) {
-    let plugin_out = await plugin(extras);
-    if (plugin_out != null) {
-      let pretty_name = plugin.name.slice(0,-7)
-      out[pretty_name] = plugin_out;
+    try {
+      let plugin_out = await plugin(extras);
+      if (plugin_out != null) {
+        let pretty_name = plugin.name.slice(0,-7)
+        out[pretty_name] = plugin_out;
+      }
+    } catch (e) {
+      console.error(`Failed to run plugin: ${plugin.name}:`, e)
     }
   }
   return out;
@@ -27,6 +31,19 @@ ALL_PLUGINS.push(example_plugin)
 async function xmrig_plugin(extras) {
   if (extras["xmrig"] == null) {
     return null;
+  }
+
+  if (extras["xmrig"] == "failed") {
+    const top_box = document.createElement("div");
+    top_box.classList.add("box");
+    // All of these should start out hidden.
+    top_box.style.display = "none";
+    
+    const title = document.createElement("h1");
+    title.classList.add("title");
+    title.innerText = "Failed to run xmrig on client."
+    top_box.appendChild(title);
+    return top_box;
   }
 
   const xmrig = extras["xmrig"]

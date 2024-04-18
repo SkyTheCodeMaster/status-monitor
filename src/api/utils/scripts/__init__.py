@@ -45,8 +45,10 @@ async def fetch_scripts(names: list[str], app: Application) -> list[Script]:
   out = []
 
   for k,v in ALL_SCRIPTS.items():
+    if not isinstance(v, Script):
+      ALL_SCRIPTS[k] = v(app)
     if k in names:
-      out.append(v(app))
+      out.append(v)
   out.sort(key=lambda p: p.priority, reverse=True)
   return out
 

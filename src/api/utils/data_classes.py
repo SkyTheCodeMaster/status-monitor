@@ -106,7 +106,7 @@ class Script:
     topic: str: Topic to send on. Defaults to config.toml topic.
     """
 
-    headers = {"Authorization": f"Bearer {self.app.config.notify.token}"}
+    headers = {"Authorization": self.app.config.notify.token}
 
     if topic is None:
       topic = self.app.config.notify.topic
@@ -132,7 +132,7 @@ class Script:
       self.app.config.notify.url, headers=headers, data=json.dumps(data)
     ) as resp:
       if resp.status != 200:
-        self.app.LOG.warning(f"{self.app.config.notify.topic} {headers}")
+        self.app.LOG.warning(f"{self.app.config.notify.topic} {headers} {data}")
         self.app.LOG.warning(f"Failed to send ntfy! HTTP{resp.status}: {await resp.text()}")
       return resp.status == 200
 
@@ -262,11 +262,11 @@ class MonitorPacket:
   ) -> None:
     for script in scripts:
       try:
-        if self._log:
+        if hasattr(self,"_log"):
           self._log.info(f"[SCRIPTS] Running {script.name} for {connected_machine.name}.")
         await script.run(self, connected_machine)
       except Exception:
-        if self.log:
+        if hasattr(self,"_log"):
           self._log.exception(f"Failed running {script.name}!")
 
   async def out(

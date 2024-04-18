@@ -35,6 +35,7 @@ class XmrigScript(Script, name="xmrig"):
 
     if raw["extras"]["xmrig"] == "failed":
       machine.add_warning("xmrig")
+      return
 
     if "xmrig" in machine.extra_config:
       target_hashrate = machine.extra_config["xmrig"]["hashrate"]

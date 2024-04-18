@@ -66,6 +66,30 @@ async function close_machine_modal() {
   window.history.replaceState(null, null, url);
 }
 
+async function clear_warning() {
+  const url = new URL(window.location.href)
+  let selected_machine = url.searchParams.get("m");
+
+  try {
+    let request = await fetch("/api/machines/clearwarnings/?name="+encodeURIComponent(selected_machine).replace("%20","+")+"&after=15", {
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+    });
+
+    if (request.status == 200) {
+      let popup_id = create_popup("Cleared warnings!");
+      setTimeout(function() {remove_popup(popup_id)}, 5000);
+    } else {
+      let popup_id = create_popup("HTTP" + request.status + ":\n" + await request.text(), true);
+      setTimeout(function() {remove_popup(popup_id)}, 10000);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 async function refresh_machine_modal() {
   await display_machine_modal(selected_machine);
 }
@@ -183,36 +207,40 @@ async function display_machine_modal(machine_name) {
   let plugin_elements = await run_plugins(data["data"]["extras"]);
 
   for (let [name,element] of Object.entries(plugin_elements)) {
-    // Create a button and set it up
-    const plugin_id = make_id(12);
-    const plugin_name = (" "+name).slice(1)
-    const button = document.createElement("button");
-    button.classList.add("button","is-fullwidth","mt-2");
-    button.id = format("modal_machine_plugin_button_{0}", plugin_id);
-    element.id = format("modal_machine_plugin_box_{0}", plugin_id);
-    button.onclick = function() { 
-      toggle_modal_box("modal_machine_plugin_box_"+plugin_id);
-      open_plugin_tabs[plugin_name] = element.style.display == "";
-
-      const url = new URL(window.location.href);
-      let selected_plugins = Object.keys(open_plugin_tabs).filter(k => open_plugin_tabs[k])
-      if (selected_plugins.length == 0) {
-        url.searchParams.delete("mt");
+    try {
+      // Create a button and set it up
+      const plugin_id = make_id(12);
+      const plugin_name = (" "+name).slice(1)
+      const button = document.createElement("button");
+      button.classList.add("button","is-fullwidth","mt-2");
+      button.id = format("modal_machine_plugin_button_{0}", plugin_id);
+      element.id = format("modal_machine_plugin_box_{0}", plugin_id);
+      button.onclick = function() { 
+        toggle_modal_box("modal_machine_plugin_box_"+plugin_id);
+        open_plugin_tabs[plugin_name] = element.style.display == "";
+  
+        const url = new URL(window.location.href);
+        let selected_plugins = Object.keys(open_plugin_tabs).filter(k => open_plugin_tabs[k])
+        if (selected_plugins.length == 0) {
+          url.searchParams.delete("mt");
+        } else {
+          url.searchParams.set("mt", selected_plugins.join(","));
+        }
+        window.history.replaceState(null, null, url);
+      };
+      button.innerText = to_title_case(name);
+  
+      if (open_plugin_tabs[plugin_name]) {
+        element.style.display = "";
       } else {
-        url.searchParams.set("mt", selected_plugins.join(","));
+        open_plugin_tabs[plugin_name] = false; // Explicity add false.
       }
-      window.history.replaceState(null, null, url);
-    };
-    button.innerText = to_title_case(name);
-
-    if (open_plugin_tabs[plugin_name]) {
-      element.style.display = "";
-    } else {
-      open_plugin_tabs[plugin_name] = false; // Explicity add false.
+  
+      modal_machine_plugin_div.appendChild(button);
+      modal_machine_plugin_div.appendChild(element);
+    } catch (e) {
+      console.error("Failed to setup plugin:", e);
     }
-
-    modal_machine_plugin_div.appendChild(button);
-    modal_machine_plugin_div.appendChild(element);
   }
 
   modal_machine.classList.add("is-active");
